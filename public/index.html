@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+ 
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+
+    <script>
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        const player = new Spotify.Player({
+            name: 'Clone Player',
+            getOAuthToken: callback => {
+                refreshToken()
+                    .then((access_token) => callback(access_token))
+                    .catch(error => console.log(error))
+            }
+        })
+
+        player.connect().then(success => {
+            if (success) {
+              console.log('The Web Playback SDK successfully connected to Spotify!');
+            }
+          })
+
+        	
+        player.addListener('ready', ({ device_id }) => {
+          console.log('The Web Playback SDK is ready to play music!');
+          console.log('Device ID', device_id);
+        })
+    };
+    </script>
+  </body>
+</html>
