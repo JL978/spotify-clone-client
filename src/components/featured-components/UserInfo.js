@@ -14,8 +14,9 @@ const UserInfo = () => {
     }
 
     const logout = () => {
-        axios(`${process.env.REACT_APP_BACK_URI}/logout`, {withCredentials: true, headers: {'Access-Control-Allow-Origin':'*'}})
+        axios(`${process.env.REACT_APP_BACK_URI}/logout`, {withCredentials: true})
             .then(response => {
+                console.log(response)
                 window.location.reload()})
             .catch(error => console.log(error))
     }
