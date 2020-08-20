@@ -1,5 +1,5 @@
 import React, {useContext} from 'react'
-import {Switch, Route, useHistory} from 'react-router-dom'
+import {Switch, Route, Redirect, useHistory} from 'react-router-dom'
 
 import HomePage from '../pages-components/HomePage'
 import SearchPage from '../pages-components/SearchPage'
@@ -44,11 +44,11 @@ export default function PageContent({query, playlists, refreshPlaylist, message,
                 <ArtistPage />
             </Route>
             <Route path='/collection'>
-                {loggedIn ? history.push('/collection/playlist'):history.push('/')}
+                {loggedIn ? <Redirect to='/collection/playlist'/>:<Redirect to='/'/>}
                 <CollectionPage playlists={playlists}/>
             </Route>
             <Route path='/tracks'>
-                {loggedIn ? <LikePage />:history.push('/')}
+                {loggedIn ? <LikePage />:<Redirect to='/'/>}
             </Route>
         </Switch>
         <div className={`status-bar-wrapper ${status? 'active':''}`}>
