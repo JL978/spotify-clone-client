@@ -30,7 +30,7 @@ function TipContent({title, tip}){
             <h3>{tip}</h3>
             <div className="tipOptions">
                 <PromptButton name='Not Now' styleName='dark' onClick={() => ReactToolTip.hide()}/>
-                <PromptButton to='http://localhost:4000/login' name='Log In' styleName='light'/>
+                <PromptButton to={`${process.env.REACT_APP_BACK_URI}/login`} name='Log In' styleName='light'/>
             </div>
         </div>
     )
