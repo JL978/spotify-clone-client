@@ -9,6 +9,7 @@ export default function makeAxiosRequest(endpoint){
             method: 'POST',
             url: process.env.REACT_APP_BACK_URI,
             data: {endpoint},
+            withCredentials: true,
             cancelToken
         }
         try{
