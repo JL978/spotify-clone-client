@@ -1,5 +1,5 @@
 import React, {useContext} from 'react'
-import {Switch, Route, Redirect, useHistory} from 'react-router-dom'
+import {Switch, Route, useHistory} from 'react-router-dom'
 
 import HomePage from '../pages-components/HomePage'
 import SearchPage from '../pages-components/SearchPage'
