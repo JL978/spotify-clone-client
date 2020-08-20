@@ -1,5 +1,5 @@
 import React, {useContext} from 'react'
-import {Switch, Route, Redirect, useHistory} from 'react-router-dom'
+import {Switch, Route, Redirect} from 'react-router-dom'
 
 import HomePage from '../pages-components/HomePage'
 import SearchPage from '../pages-components/SearchPage'
@@ -17,7 +17,6 @@ import {LoginContext} from '../../utilities/context'
 
 export default function PageContent({query, playlists, refreshPlaylist, message, status}) {
     const loggedIn = useContext(LoginContext)
-    const history = useHistory()
 
     return (
         <>
