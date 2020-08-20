@@ -65,7 +65,7 @@ function App() {
         setLoading(false)
       //If nothing is found on in the hash params -> check with the server if there is a valid refresh token in the cookie
       }else{
-        Axios('http://localhost:4000/refresh_token', {withCredentials: true})
+        Axios(`${process.env.REACT_APP_BACK_URI}/refresh_token`, {withCredentials: true})
           .then((response) => {
             const access_token = response.data.access_token
             setToken(access_token)

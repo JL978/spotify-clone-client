@@ -5,7 +5,7 @@ export default function UserPrompt() {
     return (
         <div className='UserPrompt'>
             <PromptButton to='https://spotify.com/signup' name='Sign Up' styleName='dark'/>
-            <PromptButton to='http://localhost:4000/login' name='Log In' styleName='light'/>
+            <PromptButton to={`${process.env.REACT_APP_BACK_URI}/login`} name='Log In' styleName='light'/>
         </div>
     )
 }
