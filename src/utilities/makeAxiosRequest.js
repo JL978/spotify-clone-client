@@ -7,7 +7,7 @@ export default function makeAxiosRequest(endpoint){
         const cancelToken = source.token
         const config = {
             method: 'POST',
-            url: 'http://localhost:4000/',
+            url: process.env.REACT_APP_BACK_URI,
             data: {endpoint},
             cancelToken
         }
