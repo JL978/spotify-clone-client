@@ -33,8 +33,7 @@ This project was created by me mainly to teach myself React development. Since t
 The majority of the react components and logic was written from scratch by myself. I chose not to use existing component libraries because that forces me to both get a really deep understanding of React and get as much practice as I could with React.
 
 ## Tech/Framework Used
-* ReactJS
-* create-react-app CLI
+* React (create-react-app CLI)
 * react-router-dom
 * axios
 
