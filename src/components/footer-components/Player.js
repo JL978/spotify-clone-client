@@ -44,18 +44,14 @@ const Player = React.forwardRef(({ token }, ref) => {
 
 	useEffect(() => {
 		loadScript();
-		updateState();
-		const tipAccess = localStorage.getItem("tipAccess");
-		if (!tipAccess) {
-			localStorage.setItem("tipAccess", "true");
-			setConnectTip(true);
-		}
+		apiUpdate();
 
 		window.onSpotifyWebPlaybackSDKReady = () => playerInit();
 
 		return () => {
 			source.cancel();
 			clearTimeout(timerRef.current);
+			player.disconnect();
 		};
 		// eslint-disable-next-line
 	}, []);
@@ -83,26 +79,55 @@ const Player = React.forwardRef(({ token }, ref) => {
 
 		// Error handling
 		player.addListener("initialization_error", ({ message }) => {
-			console.error(message);
+			setMessage(message);
 		});
 		player.addListener("authentication_error", ({ message }) => {
-			console.error(message);
+			setMessage(message);
 		});
 		player.addListener("account_error", ({ message }) => {
-			console.error(message);
+			setMessage(message);
 		});
 		player.addListener("playback_error", ({ message }) => {
-			console.error(message);
+			setMessage(message);
 		});
 
 		// Playback status updates
 		player.addListener("player_state_changed", (state) => {
 			console.log(state);
+			try {
+				const {
+					duration,
+					position,
+					paused,
+					shuffle,
+					repeat_mode,
+					track_window,
+				} = state;
+				const { current_track } = track_window;
+
+				setPlayInfo(current_track);
+				setPlayback(position / duration);
+				setPlaybackState((state) => ({
+					...state,
+					play: !paused,
+					shuffle: shuffle,
+					repeat: repeat_mode !== 0,
+					progress: position,
+					total_time: duration,
+				}));
+			} catch (error) {
+				console.log(error);
+			}
 		});
 
 		// Ready
 		player.addListener("ready", ({ device_id }) => {
 			console.log("Ready with Device ID", device_id);
+			const tipAccess = localStorage.getItem("tipAccess");
+			if (!tipAccess) {
+				localStorage.setItem("tipAccess", "true");
+				setConnectTip(true);
+			}
 		});
 
 		// Not Ready
@@ -114,7 +139,23 @@ const Player = React.forwardRef(({ token }, ref) => {
 		player.connect();
 	};
 
+	//Reference for parent component to use updateState
+	useImperativeHandle(ref, () => ({
+		updateState: () => {
+			setPlaybackState((state) => ({ ...state, play: true }));
+			updateState();
+		},
+	}));
+
+	//Use for other components to update the player state only if not connected to the web player
 	const updateState = () => {
+		if (!player.current) {
+			apiUpdate();
+		}
+	};
+
+	const apiUpdate = () => {
+		console.log("hello");
 		if (timerRef.current) {
 			clearTimeout(timerRef.current);
 		}
@@ -123,70 +164,48 @@ const Player = React.forwardRef(({ token }, ref) => {
 			token,
 			source
 		);
-		player
-			.getCurrentState()
-			.then((state) => {
-				if (!state) {
-					requestInfo().then((response) => {
-						if (response.status === 200) {
-							const {
-								repeat_state,
-								shuffle_state,
-								is_playing,
-								progress_ms,
-								item,
-								device,
-							} = response.data;
-							setPlayback(progress_ms / item.duration_ms);
-							timerRef.current = setTimeout(
-								() => updateState(),
-								item.duration_ms - progress_ms + 10
-							);
-							setVolume(device.volume_percent / 100);
-							setPlaybackState((state) => ({
-								...state,
-								play: is_playing,
-								shuffle: shuffle_state,
-								repeat: repeat_state !== "off",
-								progress: progress_ms,
-								total_time: item.duration_ms,
-							}));
-							setPlayInfo(item);
-						} else if (response.status === 204) {
-							setMessage(
-								"Please login to an official Spotify app and/or start playing to use the player"
-							);
-							setConnectTip(true);
-						} else {
-							setMessage(
-								`ERROR: server response with ${response}. Player feature is unavailable!`
-							);
-						}
-					});
-					return;
+
+		requestInfo()
+			.then((response) => {
+				if (response.status === 200) {
+					const {
+						repeat_state,
+						shuffle_state,
+						is_playing,
+						progress_ms,
+						item,
+						device,
+					} = response.data;
+					setPlayback(progress_ms / item.duration_ms);
+
+					timerRef.current = setTimeout(
+						() => updateState(),
+						item.duration_ms - progress_ms + 10
+					);
+
+					setVolume(device.volume_percent / 100);
+					setPlaybackState((state) => ({
+						...state,
+						play: is_playing,
+						shuffle: shuffle_state,
+						repeat: repeat_state !== "off",
+						progress: progress_ms,
+						total_time: item.duration_ms,
+					}));
+					setPlayInfo(item);
+				} else if (response.status === 204) {
+					setMessage(
+						"Player is not working, select a device to start listening"
+					);
+					setConnectTip(true);
+				} else {
+					setMessage(
+						`ERROR: server response with ${response}. Player feature is unavailable!`
+					);
 				}
-
-				const { duration, position, paused, repeat_mode, shuffle } = state;
-				setPlayback(position / duration);
-
-				setPlaybackState((state) => ({
-					...state,
-					play: !paused,
-					shuffle: shuffle,
-					repeat: repeat_mode !== 0,
-					progress: position,
-					total_time: duration,
-				}));
 			})
 			.catch((error) => console.log(error));
 	};
-
-	useImperativeHandle(ref, () => ({
-		updateState: () => {
-			setPlaybackState((state) => ({ ...state, play: true }));
-			updateState();
-		},
-	}));
 
 	const updatePlayback = () => {
 		const interval = 500 / playbackState.total_time;
@@ -197,128 +216,65 @@ const Player = React.forwardRef(({ token }, ref) => {
 	const source = axios.CancelToken.source();
 
 	const togglePlay = () => {
-		if (playbackState.play) {
-			const request = putWithToken(
-				"https://api.spotify.com/v1/me/player/pause",
-				token,
-				source
-			);
-			request()
-				.then((response) => {
-					if (response.status === 204) {
-						setPlaybackState((state) => ({ ...state, play: false }));
-						updateState();
-					} else {
-						setMessage(
-							`ERROR: Something went wrong! Server response: ${response}`
-						);
-					}
-				})
-				.catch((error) => setMessage(`ERROR: ${error}`));
-		} else {
-			const request = putWithToken(
-				"https://api.spotify.com/v1/me/player/play",
-				token,
-				source
-			);
-			request()
-				.then((response) => {
-					if (response.status === 204) {
-						setPlaybackState((state) => ({ ...state, play: true }));
-						updateState();
-					} else {
-						setMessage(
-							`ERROR: Something went wrong! Server response: ${response}`
-						);
-					}
-				})
-				.catch((error) => setMessage(`ERROR: ${error}`));
-		}
-		updateState();
+		const url = playbackState.play
+			? "https://api.spotify.com/v1/me/player/pause"
+			: "https://api.spotify.com/v1/me/player/play";
+
+		const request = putWithToken(url, token, source);
+		request()
+			.then((response) => {
+				if (response.status !== 204) {
+					setMessage(
+						`ERROR: Something went wrong! Server response: ${response}`
+					);
+				} else {
+					setPlaybackState((state) => ({ ...state, play: !state.play }));
+					updateState();
+				}
+			})
+			.catch((error) => setMessage(`ERROR: ${error}`));
 	};
 
 	const toggleShuffle = () => {
-		if (playbackState.shuffle) {
-			const request = putWithToken(
-				"https://api.spotify.com/v1/me/player/shuffle?state=false",
-				token,
-				source
-			);
-			request()
-				.then((response) => {
-					if (response.status === 204) {
-						setPlaybackState((state) => ({ ...state, shuffle: false }));
-						updateState();
-						setMessage("Shuffle Off");
-					} else {
-						setMessage(
-							`ERROR: Something went wrong! Server response: ${response.status}`
-						);
-					}
-				})
-				.catch((error) => setMessage(`ERROR: ${error}`));
-		} else {
-			const request = putWithToken(
-				"https://api.spotify.com/v1/me/player/shuffle?state=true",
-				token,
-				source
-			);
-			request()
-				.then((response) => {
-					if (response.status === 204) {
-						setPlaybackState((state) => ({ ...state, shuffle: true }));
-						updateState();
-						setMessage("Shuffle Off");
-					} else {
-						setMessage(
-							`ERROR: Something went wrong! Server response: ${response.status}`
-						);
-					}
-				})
-				.catch((error) => setMessage(`ERROR: ${error}`));
-		}
+		const request = putWithToken(
+			`https://api.spotify.com/v1/me/player/shuffle?state=${!playbackState.shuffle}`,
+			token,
+			source
+		);
+		request()
+			.then((response) => {
+				if (response.status === 204) {
+					setMessage(`Shuffle ${playbackState.shuffle ? "Off" : "On"}`);
+					setPlaybackState((state) => ({ ...state, shuffle: !state.shuffle }));
+					updateState();
+				} else {
+					setMessage(
+						`ERROR: Something went wrong! Server response: ${response.status}`
+					);
+				}
+			})
+			.catch((error) => setMessage(`ERROR: ${error}`));
 	};
 
 	const toggleRepeat = () => {
-		if (playbackState.repeat) {
-			const request = putWithToken(
-				"https://api.spotify.com/v1/me/player/repeat?state=off",
-				token,
-				source
-			);
-			request()
-				.then((response) => {
-					if (response.status === 204) {
-						setPlaybackState((state) => ({ ...state, repeat: false }));
-						updateState();
-						setMessage("Repeat Track Off");
-					} else {
-						setMessage(
-							`ERROR: Something went wrong! Server response: ${response.status}`
-						);
-					}
-				})
-				.catch((error) => setMessage(`ERROR: ${error}`));
-		} else {
-			const request = putWithToken(
-				"https://api.spotify.com/v1/me/player/repeat?state=track",
-				token,
-				source
-			);
-			request()
-				.then((response) => {
-					if (response.status === 204) {
-						setPlaybackState((state) => ({ ...state, repeat: true }));
-						updateState();
-						setMessage("Repeat Track On");
-					} else {
-						setMessage(
-							`ERROR: Something went wrong! Server response: ${response.status}`
-						);
-					}
-				})
-				.catch((error) => setMessage(`ERROR: ${error}`));
-		}
+		const url = playbackState.repeat
+			? "https://api.spotify.com/v1/me/player/repeat?state=off"
+			: "https://api.spotify.com/v1/me/player/repeat?state=track";
+
+		const request = putWithToken(url, token, source);
+		request()
+			.then((response) => {
+				if (response.status === 204) {
+					setMessage(`Repeat Track ${playbackState.repeat ? "Off" : "On"}`);
+					setPlaybackState((state) => ({ ...state, repeat: !state.repeat }));
+					updateState();
+				} else {
+					setMessage(
+						`ERROR: Something went wrong! Server response: ${response.status}`
+					);
+				}
+			})
+			.catch((error) => setMessage(`ERROR: ${error}`));
 	};
 
 	const skipNext = () => {
@@ -331,13 +287,13 @@ const Player = React.forwardRef(({ token }, ref) => {
 		);
 		request()
 			.then((response) => {
-				if (response.status === 204) {
-					updateState();
-				} else {
+				if (response.status !== 204) {
 					setMessage(
 						`ERROR: Something went wrong! Server response: ${response.status}`
 					);
+					return;
 				}
+				updateState();
 			})
 			.catch((error) => setMessage(`ERROR: ${error}`));
 	};
@@ -352,13 +308,13 @@ const Player = React.forwardRef(({ token }, ref) => {
 		);
 		request()
 			.then((response) => {
-				if (response.status === 204) {
-					updateState();
-				} else {
+				if (response.status !== 204) {
 					setMessage(
 						`ERROR: Something went wrong! Server response: ${response.status}`
 					);
+					return;
 				}
+				updateState();
 			})
 			.catch((error) => setMessage(`ERROR: ${error}`));
 	};
@@ -375,7 +331,7 @@ const Player = React.forwardRef(({ token }, ref) => {
 			.then((response) => {
 				if (response.status === 204) {
 					setPlayback(ratio);
-					setPlaybackState((state) => ({ ...state, progress_ms: time }));
+					setPlaybackState((state) => ({ ...state, progress: time }));
 					updateState();
 				} else {
 					setMessage(
