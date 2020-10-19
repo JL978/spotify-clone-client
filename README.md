@@ -2,14 +2,11 @@
 A front-end clone project of the Spotify web player. The project was created using the create-react-app CLI. The app is meant to work in conjunction with an authorization/authenication server found at this [repo](https://github.com/JL978/spotify-clone-server).
 
 ## Table of Contents
-
-- [Spotify Clone Front-End](#spotify-clone-front-end)
-  - [Table of Contents](#table-of-contents)
-  - [Description](#description)
-  - [Motivation](#motivation)
-  - [Tech/Framework Used](#techframework-used)
-  - [Installation](#installation)
-  - [Reflection](#reflection)
+- [Description](#description)
+- [Motivation](#motivation)
+- [Tech/Framework Used](#techframework-used)
+- [Installation](#installation)
+- [Reflection](#reflection)
 
 ## Description
 A clone web application using the create-react-app. The app comsumes data from the Spotify API and tries to mimic the UI and front-end behaviours of the official [Spotify web player](https://open.spotify.com/) as much as possible.
