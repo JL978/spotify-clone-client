@@ -6,7 +6,7 @@ A front-end clone project of the Spotify web player. The project was created usi
 - [Motivation](#motivation)
 - [Tech/Framework Used](#techframework-used)
 - [Installation](#installation)
-- [Reflection](#reflection)
+- [Architechture](#architecture)
 
 ## Description
 A clone web application using the create-react-app. The app comsumes data from the Spotify API and tries to mimic the UI and front-end behaviours of the official [Spotify web player](https://open.spotify.com/) as much as possible.
@@ -57,7 +57,19 @@ To start up the app locally
 $ npm start
 ```
 
-Additionally, this project also requires you to clone and run the server code from this [repository](https://github.com/JL978/spotify-clone-server) to work properly.
+Additionally, this project also requires you to clone and run the server code from this [repo](https://github.com/JL978/spotify-clone-server) to work properly.
 
-## Reflection
-[coming soon]
+## Architecture
+### Authentication and Authorization
+
+As mentioned from before this app needs to be used with a authentication server with the code provided on another [repo](https://github.com/JL978/spotify-clone-server), you can navigate there to learn more about how the server works. On this end, in order to be logged in, the app must have 2 things: a refresh_key stored in cookie and an access_key stored in memory. When there these values are present, the user is effectively "logged in" and therefore the app will render the "logged in" version with the user's personal info. The benefit of doing authorization this way is that we are not exposed to XSRF by avoiding having the access_key stored in cookie while also keeping the user logged in if they refresh the app through the following flow.
+
+![Authorization flow](demo/auth.png)
+
+As far as I know, this is the safest way to handle keys in OAuth flow.  
+
+### Custom hooks and utilities
+
+One of the more interesting functionality from this project is the infinite scroll on playlists and search results. This feature was made using custom hooks and integration with the Spotify API pagination system.
+
+[More coming soon...]
